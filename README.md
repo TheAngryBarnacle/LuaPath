@@ -1,7 +1,4 @@
 <p align="center">
-LuaPath
-</p>
-<p align="center">
   <img width="128" height="128" src="https://github.com/user-attachments/assets/c1931384-0cc5-469a-abf3-cf9d32864f07">
 </p>
 <p align="center">
