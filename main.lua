@@ -97,21 +97,6 @@ local function open_file(file)
 end
 local viewport = ui.Canvas(frame,sidebar.width,0,frame.width - 300,frame.height)
 
-function viewport:arc(cx, cy, radius, startAngle, endAngle, segments)
-    local deg2rad = math.pi / 180
-    local angleStep = (endAngle - startAngle) / segments
-    local prevX = cx + math.cos(startAngle * deg2rad) * radius
-    local prevY = cy + math.sin(startAngle * deg2rad) * radius
-
-    for i = 1, segments do
-        local angle = startAngle + i * angleStep
-        local rad = angle * deg2rad
-        local x = cx + math.cos(rad) * radius
-        local y = cy - math.sin(rad) * radius  -- flip y-axis for typical arc direction
-        self:line(prevX, prevY, x, y)
-        prevX, prevY = x, y
-    end
-end
 
 local axisImage = viewport:Image(sys.File("resources/images/show_hide_axis.png"))
 local axisImage_white = viewport:Image(sys.File("resources/images/show_hide_axis_white.png"))
