@@ -31,7 +31,7 @@ LuaPath is a lightweight desktop application for visualizing G-code toolpaths in
 
 No installation required. LuaPath is a portable executable.
 
-1. **Download the latest release** from [Releases](https://github.com/yourusername/LuaPath/releases)
+1. **Download the latest release** from [Releases](https://github.com/TheAngryBarnacle/LuaPath/releases)
 2. **Unzip the package**
 3. **Run `LuaPath.exe`**
 
