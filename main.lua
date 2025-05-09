@@ -89,7 +89,7 @@ local currentFile_edit = ui.Edit(sidebar,"",10,currentFile_lbl.y + currentFile_l
 
 local function open_file(file)
   if file ~= nil then
-    currentFile_edit:load(currentFile)
+    currentFile_edit:load(file)
     currentFile_lbl.text = file.name
     currentFile_lbl.fontsize = 10
     currentFile_lbl.y = (openFile.height - currentFile_lbl.height) / 2 + 10
