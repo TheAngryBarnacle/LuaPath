@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>G-Code 3D Viewer</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #f0f0f0; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="three.min.js"></script>
+  <script>
+    "use strict";
+
+    const theme = {
+      canvasBG: 0xF0F0F0,
+      grid: 0x000000,
+      axis: {
+        x: 0xe63946,
+        y: 0x2a9d8f,
+        z: 0x457b9d
+      }
+    };
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(theme.canvasBG);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+    const pivot = new THREE.Object3D();
+    pivot.add(camera);
+    scene.add(pivot);
+    camera.position.set(150, 150, 150);
+    camera.lookAt(pivot.position);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    // Handle resizing
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+    // Grid and Axes
+    scene.add(new THREE.GridHelper(400, 40, theme.grid, theme.grid));
+    const axisLength = 100;
+    scene.add(
+      new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), axisLength, theme.axis.x),
+      new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), axisLength, theme.axis.y),
+      new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(), axisLength, theme.axis.z)
+    );
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(100, 200, 100);
+    scene.add(dirLight);
+
+    // Interaction variables
+    const movementSpeed = 5;
+    const rotationSpeed = 0.005;
+    let zoomLevel = camera.position.length();
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+
+    // Input controls
+    document.addEventListener("keydown", (e) => {
+      switch (e.key) {
+        case 'w': pivot.position.z -= movementSpeed; break;
+        case 's': pivot.position.z += movementSpeed; break;
+        case 'a': pivot.position.x -= movementSpeed; break;
+        case 'd': pivot.position.x += movementSpeed; break;
+        case 'q': pivot.position.y += movementSpeed; break;
+        case 'e': pivot.position.y -= movementSpeed; break;
+      }
+    });
+
+    document.addEventListener("wheel", (e) => {
+      zoomLevel = THREE.MathUtils.clamp(zoomLevel + e.deltaY * 0.05, 20, 500);
+      camera.position.setLength(zoomLevel);
+    });
+
+    document.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - previousMousePosition.x;
+      const dy = e.clientY - previousMousePosition.y;
+      pivot.rotation.y -= dx * rotationSpeed;
+      pivot.rotation.x -= dy * rotationSpeed;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    document.addEventListener("mouseup", () => isDragging = false);
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Draw G-code
+    function drawGCode(commands) {
+      const scale = 20;
+      const vertices = [];
+      const geometry = new THREE.BufferGeometry();
+      const material = new THREE.LineBasicMaterial({ color: 0x0077b6 });
+      let currentPos = new THREE.Vector3();
+
+      for (const cmd of commands) {
+        const g = cmd.Command;
+        const x = (cmd.X ?? currentPos.x / scale) * scale;
+        const y = (cmd.Y ?? currentPos.y / scale) * scale;
+        const z = (cmd.Z ?? currentPos.z / scale) * scale;
+        const targetPos = new THREE.Vector3(x, z, y);
+
+        if (cmd.isArc && (g === "G02" || g === "G03")) {
+          const i = (cmd.I ?? 0) * scale;
+          const j = (cmd.J ?? 0) * scale;
+          const centerX = currentPos.x + i;
+          const centerY = currentPos.y + j;
+          const startAngle = Math.atan2(currentPos.y - centerY, currentPos.x - centerX);
+          const endAngle = Math.atan2(targetPos.y - centerY, targetPos.x - centerX);
+          const radius = Math.hypot(i, j);
+          let angleDiff = endAngle - startAngle;
+
+          if (g === "G02" && angleDiff > 0) angleDiff -= Math.PI * 2;
+          if (g === "G03" && angleDiff < 0) angleDiff += Math.PI * 2;
+
+          const arcSegments = 24;
+          for (let i = 0; i <= arcSegments; i++) {
+            const t = i / arcSegments;
+            const angle = startAngle + angleDiff * t;
+            vertices.push(
+              centerX + radius * Math.cos(angle),
+              centerY + radius * Math.sin(angle),
+              currentPos.z + (z - currentPos.z) * t
+            );
+          }
+        } else if (g === "G00" || g === "G01") {
+          vertices.push(currentPos.x, currentPos.y, currentPos.z);
+          vertices.push(targetPos.x, targetPos.y, targetPos.z);
+        }
+
+        currentPos.copy(targetPos);
+      }
+
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+      scene.add(new THREE.LineSegments(geometry, material));
+    }
+
+    // Webview interface
+    window.chrome?.webview?.addEventListener('message', arg => {
+      if("GCODE" in arg.data){
+        window.chrome.webview.postMessage("GCODE Received")
+        drawGCode(arg.data.GCODE)
+      }
+      if("THEME" in arg.data){
+        window.chrome.webview.postMessage("THEME Received: " + arg.data.THEME)
+      }
+    });
+	
+
+  </script>
+</body>
+</html>
