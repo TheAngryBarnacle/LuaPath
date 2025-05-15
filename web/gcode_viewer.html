@@ -9,165 +9,260 @@
   </style>
 </head>
 <body>
+  <style>
+  #toggleAxesBtn {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-family: sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s, color 0.3s;
+}
+
+  #toggleAxesBtn:hover {
+    background-color: #eeeeee;
+  }
+
+  #toggleAxesBtn img {
+    width: 24px;
+    height: 24px;
+  }
+</style>
+
+<button id="toggleAxesBtn">
+  <img id="axisIcon" src="icons/axis_white.png" alt="Axis Icon">
+  <span>Show/Hide<br>Global Axes</span>
+</button>
   <script src="three.min.js"></script>
   <script>
-    "use strict";
+  "use strict";
 
-    const theme = {
-      canvasBG: 0xF0F0F0,
-      grid: 0x000000,
-      axis: {
-        x: 0xe63946,
-        y: 0x2a9d8f,
-        z: 0x457b9d
-      }
-    };
+  const themes = {
+    dark: {
+      background: 0x1e1e1e, text: 0xd4d4d4,
+      axis: { x: 0xff5555, y: 0x55ff55, z: 0x5599ff },
+      card: 0x333333, canvasBG: 0x181818, grid: 0xFFFFFF,
+      travel: 0x888888, cut: 0x00d4ff, extrusion: 0xff00ff,
+      highlight: 0xffaa00, accent: 0x00c896,
+      button: 0x00c896, buttonHover: 0x33dab1,
+      buttonText: 0x1e1e1e, buttonTextHover: 0x000000,
+    },
+    light: {
+      background: 0xffffff, text: 0x222222,
+      axis: { x: 0xe63946, y: 0x2a9d8f, z: 0x457b9d },
+      card: 0xdddddd, canvasBG: 0xF0F0F0, grid: 0x000000,
+      travel: 0xaaaaaa, cut: 0x0077b6, extrusion: 0xc1121f,
+      highlight: 0xf4a261, accent: 0x264653,
+      button: 0x264653, buttonHover: 0x3c6f75,
+      buttonText: 0xffffff, buttonTextHover: 0xe0e0e0,
+    }
+  };
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(theme.canvasBG);
+  let currentTheme = themes.light;
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-    const pivot = new THREE.Object3D();
-    pivot.add(camera);
-    scene.add(pivot);
-    camera.position.set(150, 150, 150);
-    camera.lookAt(pivot.position);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(currentTheme.canvasBG);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+  const pivot = new THREE.Object3D();
+  pivot.add(camera);
+  scene.add(pivot);
+  camera.position.set(150, 150, 150);
+  camera.lookAt(pivot.position);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    
-    // Handle resizing
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Grid and Axes
+  let grid = new THREE.GridHelper(400, 40, currentTheme.grid, currentTheme.grid);
+  scene.add(grid);
+
+  let xAxis = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 100, currentTheme.axis.x);
+  let yAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 100, currentTheme.axis.y);
+  let zAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(), 100, currentTheme.axis.z);
+  scene.add(xAxis, yAxis, zAxis);
+
+  // Apply button theme colors
+function updateButtonTheme() {
+  const btn = document.getElementById("toggleAxesBtn");
+  const icon = document.getElementById("axisIcon");
+
+  // Update button colors
+  btn.style.backgroundColor = "#" + currentTheme.button.toString(16).padStart(6, '0');
+  btn.style.color = "#" + currentTheme.buttonText.toString(16).padStart(6, '0');
+
+  btn.onmouseenter = () => {
+    btn.style.backgroundColor = "#" + currentTheme.buttonHover.toString(16).padStart(6, '0');
+    btn.style.color = "#" + currentTheme.buttonTextHover.toString(16).padStart(6, '0');
+  };
+  btn.onmouseleave = () => {
+    btn.style.backgroundColor = "#" + currentTheme.button.toString(16).padStart(6, '0');
+    btn.style.color = "#" + currentTheme.buttonText.toString(16).padStart(6, '0');
+  };
+
+  // Update icon source based on theme
+  icon.src = currentTheme === themes.dark ? "icons/axis.png" : "icons/axis_white.png";
+}
+
+const toggleBtn = document.getElementById("toggleAxesBtn");
+let axesVisible = true;
+toggleBtn.addEventListener("click", () => {
+  axesVisible = !axesVisible;
+  xAxis.visible = axesVisible;
+  yAxis.visible = axesVisible;
+  zAxis.visible = axesVisible;
 });
 
-    // Grid and Axes
-    scene.add(new THREE.GridHelper(400, 40, theme.grid, theme.grid));
-    const axisLength = 100;
-    scene.add(
-      new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), axisLength, theme.axis.x),
-      new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), axisLength, theme.axis.y),
-      new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(), axisLength, theme.axis.z)
-    );
+// Call this after theme change
+updateButtonTheme();
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(100, 200, 100);
-    scene.add(dirLight);
+// Modify your `setTheme()` to also call it:
+function setTheme(name) {
+  if (!(name in themes)) return;
+  currentTheme = themes[name];
 
-    // Interaction variables
-    const movementSpeed = 5;
-    const rotationSpeed = 0.005;
-    let zoomLevel = camera.position.length();
-    let isDragging = false;
-    let previousMousePosition = { x: 0, y: 0 };
+  scene.background.set(currentTheme.canvasBG);
 
-    // Input controls
-    document.addEventListener("keydown", (e) => {
-      switch (e.key) {
-        case 'w': pivot.position.z -= movementSpeed; break;
-        case 's': pivot.position.z += movementSpeed; break;
-        case 'a': pivot.position.x -= movementSpeed; break;
-        case 'd': pivot.position.x += movementSpeed; break;
-        case 'q': pivot.position.y += movementSpeed; break;
-        case 'e': pivot.position.y -= movementSpeed; break;
-      }
-    });
+  scene.remove(grid, xAxis, yAxis, zAxis);
+  grid = new THREE.GridHelper(400, 40, currentTheme.grid, currentTheme.grid);
+  xAxis = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 100, currentTheme.axis.x);
+  yAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 100, currentTheme.axis.y);
+  zAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(), 100, currentTheme.axis.z);
+  scene.add(grid, xAxis, yAxis, zAxis);
 
-    document.addEventListener("wheel", (e) => {
-      zoomLevel = THREE.MathUtils.clamp(zoomLevel + e.deltaY * 0.05, 20, 500);
-      camera.position.setLength(zoomLevel);
-    });
+  updateButtonTheme(); // <-- Add this
+}
 
-    document.addEventListener("mousedown", (e) => {
-      isDragging = true;
-      previousMousePosition = { x: e.clientX, y: e.clientY };
-    });
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(100, 200, 100);
+  scene.add(dirLight);
 
-    document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - previousMousePosition.x;
-      const dy = e.clientY - previousMousePosition.y;
-      pivot.rotation.y -= dx * rotationSpeed;
-      pivot.rotation.x -= dy * rotationSpeed;
-      previousMousePosition = { x: e.clientX, y: e.clientY };
-    });
+  // Interaction
+  const movementSpeed = 5;
+  const rotationSpeed = 0.005;
+  let zoomLevel = camera.position.length();
+  let isDragging = false;
+  let previousMousePosition = { x: 0, y: 0 };
 
-    document.addEventListener("mouseup", () => isDragging = false);
-
-    // Animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+  document.addEventListener("keydown", (e) => {
+    switch (e.key) {
+      case 'w': pivot.position.z -= movementSpeed; break;
+      case 's': pivot.position.z += movementSpeed; break;
+      case 'a': pivot.position.x -= movementSpeed; break;
+      case 'd': pivot.position.x += movementSpeed; break;
+      case 'q': pivot.position.y += movementSpeed; break;
+      case 'e': pivot.position.y -= movementSpeed; break;
     }
-    animate();
+  });
 
-    // Draw G-code
-    function drawGCode(commands) {
-      const scale = 20;
-      const vertices = [];
-      const geometry = new THREE.BufferGeometry();
-      const material = new THREE.LineBasicMaterial({ color: 0x0077b6 });
-      let currentPos = new THREE.Vector3();
+  document.addEventListener("wheel", (e) => {
+    zoomLevel = THREE.MathUtils.clamp(zoomLevel + e.deltaY * 0.05, 20, 500);
+    camera.position.setLength(zoomLevel);
+  });
 
-      for (const cmd of commands) {
-        const g = cmd.Command;
-        const x = (cmd.X ?? currentPos.x / scale) * scale;
-        const y = (cmd.Y ?? currentPos.y / scale) * scale;
-        const z = (cmd.Z ?? currentPos.z / scale) * scale;
-        const targetPos = new THREE.Vector3(x, z, y);
+  document.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    previousMousePosition = { x: e.clientX, y: e.clientY };
+  });
 
-        if (cmd.isArc && (g === "G02" || g === "G03")) {
-          const i = (cmd.I ?? 0) * scale;
-          const j = (cmd.J ?? 0) * scale;
-          const centerX = currentPos.x + i;
-          const centerY = currentPos.y + j;
-          const startAngle = Math.atan2(currentPos.y - centerY, currentPos.x - centerX);
-          const endAngle = Math.atan2(targetPos.y - centerY, targetPos.x - centerX);
-          const radius = Math.hypot(i, j);
-          let angleDiff = endAngle - startAngle;
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - previousMousePosition.x;
+    const dy = e.clientY - previousMousePosition.y;
+    pivot.rotation.y -= dx * rotationSpeed;
+    pivot.rotation.x -= dy * rotationSpeed;
+    previousMousePosition = { x: e.clientX, y: e.clientY };
+  });
 
-          if (g === "G02" && angleDiff > 0) angleDiff -= Math.PI * 2;
-          if (g === "G03" && angleDiff < 0) angleDiff += Math.PI * 2;
+  document.addEventListener("mouseup", () => isDragging = false);
 
-          const arcSegments = 24;
-          for (let i = 0; i <= arcSegments; i++) {
-            const t = i / arcSegments;
-            const angle = startAngle + angleDiff * t;
-            vertices.push(
-              centerX + radius * Math.cos(angle),
-              centerY + radius * Math.sin(angle),
-              currentPos.z + (z - currentPos.z) * t
-            );
-          }
-        } else if (g === "G00" || g === "G01") {
-          vertices.push(currentPos.x, currentPos.y, currentPos.z);
-          vertices.push(targetPos.x, targetPos.y, targetPos.z);
-        }
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+  animate();
 
-        currentPos.copy(targetPos);
+  function drawGCode(commands) {
+  const scale = 20;
+  const zOffset = 10; // Raise paths slightly above the grid
+  const vertices = [];
+  const geometry = new THREE.BufferGeometry();
+  const material = new THREE.LineBasicMaterial({ color: currentTheme.cut });
+  let currentPos = new THREE.Vector3(0, 0, 0);
+
+  for (const cmd of commands) {
+    const g = cmd.Command;
+    const x = (cmd.X ?? currentPos.x / scale) * scale;
+    const y = (cmd.Y ?? currentPos.y / scale) * scale;
+    const z = (cmd.Z ?? currentPos.z / scale) * scale + zOffset;
+
+    const targetPos = new THREE.Vector3(x, y, z);
+
+    if (cmd.isArc && (g === "G02" || g === "G03")) {
+      const i = (cmd.I ?? 0) * scale;
+      const j = (cmd.J ?? 0) * scale;
+      const centerX = currentPos.x + i;
+      const centerY = currentPos.y + j;
+      const radius = Math.hypot(i, j);
+
+      const startAngle = Math.atan2(currentPos.y - centerY, currentPos.x - centerX);
+      const endAngle = Math.atan2(targetPos.y - centerY, targetPos.x - centerX);
+
+      let angleDiff = endAngle - startAngle;
+      if (g === "G02" && angleDiff > 0) angleDiff -= Math.PI * 2;
+      if (g === "G03" && angleDiff < 0) angleDiff += Math.PI * 2;
+
+      const segments = 24;
+      for (let s = 0; s <= segments; s++) {
+        const t = s / segments;
+        const angle = startAngle + angleDiff * t;
+        const px = centerX + radius * Math.cos(angle);
+        const py = centerY + radius * Math.sin(angle);
+        const pz = currentPos.z + (z - currentPos.z) * t;
+        vertices.push(px, pz, -py);
       }
 
-      geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-      scene.add(new THREE.LineSegments(geometry, material));
+    } else if (g === "G00" || g === "G01") {
+      vertices.push(currentPos.x, currentPos.z, -currentPos.y);
+      vertices.push(targetPos.x, targetPos.z, -targetPos.y);
     }
 
-    // Webview interface
-    window.chrome?.webview?.addEventListener('message', arg => {
-      if("GCODE" in arg.data){
-        window.chrome.webview.postMessage("GCODE Received")
-        drawGCode(arg.data.GCODE)
-      }
-      if("THEME" in arg.data){
-        window.chrome.webview.postMessage("THEME Received: " + arg.data.THEME)
-      }
-    });
-	
+    currentPos.copy(targetPos);
+  }
 
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  scene.add(new THREE.Line(geometry, material));
+}
+
+
+  // Webview interface
+  window.chrome?.webview?.addEventListener('message', arg => {
+    if ("GCODE" in arg.data) {
+      window.chrome.webview.postMessage("GCODE Received");
+      drawGCode(arg.data.GCODE);
+    }
+    if ("THEME" in arg.data) {
+      setTheme(arg.data.THEME);
+      window.chrome.webview.postMessage("THEME Received: " + arg.data.THEME);
+    }
+  });
   </script>
 </body>
 </html>

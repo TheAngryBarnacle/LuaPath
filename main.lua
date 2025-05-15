@@ -2,20 +2,19 @@ local ui = require("ui")
 require("canvas")
 require("webview")
 local json = require("json")
-
+--print(_VERSION)
 -- My Modules
 local grid = require("modules/grid")
 local cam = require("modules/camera")
 local parser = require("modules/parser")
 
 -- Theme Definitions
-ui.theme = "dark"
-
+--ui.theme = "dark"
 local themes = {
     dark = {
         background = 0x1e1e1e, text = 0xd4d4d4,
         axis = { x = 0xff5555, y = 0x55ff55, z = 0x5599ff },
-        card = 0x333333, canvasBG = 0x181818, grid = 0xFFFFFF,
+        card = 0x333333,cardHover = 0x181818, canvasBG = 0x181818, grid = 0xFFFFFF,
         travel = 0x888888, cut = 0x00d4ff, extrusion = 0xff00ff,
         highlight = 0xffaa00, accent = 0x00c896,
         button = 0x00c896, buttonHover = 0x33dab1,
@@ -24,7 +23,7 @@ local themes = {
     light = {
         background = 0xffffff, text = 0x222222,
         axis = { x = 0xe63946, y = 0x2a9d8f, z = 0x457b9d },
-        card = 0xdddddd, canvasBG = 0xF0F0F0, grid = 0x000000,
+        card = 0xdddddd,cardHover = 0xF0F0F0, canvasBG = 0xF0F0F0, grid = 0x000000,
         travel = 0xaaaaaa, cut = 0x0077b6, extrusion = 0xc1121f,
         highlight = 0xf4a261, accent = 0x264653,
         button = 0x264653, buttonHover = 0x3c6f75,
@@ -33,12 +32,12 @@ local themes = {
 }
 
 local currentTheme = themes[ui.theme]
-local currentFile = ""
+--local currentFile = ""
 local data = {}
 local frameTime = 1 / 60
 
 -- Main Window Setup
-local frame = ui.Window("LuaPath 2025.1 RC")
+local frame = ui.Window("LuaPath 2025.1")
 frame.width = 1280
 frame.height = 720
 frame.bgcolor = currentTheme.background
@@ -68,12 +67,82 @@ local currentFile_edit = ui.Edit(
     sidebar.height - (currentFile_lbl.y + currentFile_lbl.height) - 70
 )
 
+
+local sidebar_bottomUI = ui.Panel(sidebar,0,sidebar.height - 55,sidebar.width,55)
+sidebar_bottomUI.bgcolor = currentTheme.card
+--print(sidebar_bottomUI.bgcolor) = 15790320 || 0xF0F0F0
+
+local sidebar_bottomUI_settings = ui.Panel(sidebar_bottomUI,10,0,50,50)
+sidebar_bottomUI_settings.bgcolor = currentTheme.card
+local sidebar_bottomUI_settings_iconLight = ui.Picture(sidebar_bottomUI_settings,"resources/icons/settings_light.png",nil,nil,32,32)
+local sidebar_bottomUI_settings_iconDark = ui.Picture(sidebar_bottomUI_settings,"resources/icons/settings_dark.png",nil,nil,32,32)
+
+--print(sidebar_bottomUI_settings.bgcolor) = 1579032 || 181818
+
+function sidebar_bottomUI_settings:onHover()
+  self.bgcolor = currentTheme.cardHover
+end
+
+function sidebar_bottomUI_settings:onLeave()
+  self.bgcolor = currentTheme.card
+end
+
+function sidebar_bottomUI_settings:onClick()
+  local settings = {}
+  
+  local setting_window = ui.Window("Settings","fixed",600,300)
+  setting_window.bgcolor = currentTheme.card
+  setting_window:loadicon(sys.File("resources/icons/1.ico"))
+ -- setting_window:loadtrayicon(sys.File("resources/icons/1.ico"))
+  frame:showmodal(setting_window)
+  --frame:center()
+  setting_window:center()
+  
+  local setting_theme_lbl = ui.Label(setting_window,"Theme: ",20,20)
+  setting_theme_lbl.fontsize = 24
+  setting_theme_lbl.font = "Arial"
+  local setting_theme_drop = ui.Combobox(setting_window,{"dark","light"},setting_theme_lbl.x + setting_theme_lbl.width + 5,25,200)
+  setting_theme_drop.selected = setting_theme_drop.items[ui.theme]
+  
+  local saveSettings = ui.Button(setting_window,"Save Settings",10,10)
+  
+  saveSettings.x = 600 - saveSettings.width - 10
+  saveSettings.y = 300 - saveSettings.height - 10
+  
+  local closeWindow = ui.Button(setting_window,"Close Settings",10)
+  closeWindow.y = 300 - closeWindow.height - 10
+  
+  function setting_window:onHide()
+    frame:tofront()
+  end
+end
+
+if ui.theme == "dark" then
+  sidebar_bottomUI_settings_iconDark:show()
+  sidebar_bottomUI_settings_iconDark:center()
+  sidebar_bottomUI_settings_iconDark.enabled = false
+  sidebar_bottomUI_settings_iconLight:hide()
+else
+  sidebar_bottomUI_settings_iconDark:hide()
+  sidebar_bottomUI_settings_iconLight:show()
+  sidebar_bottomUI_settings_iconLight:center()
+  sidebar_bottomUI_settings_iconLight.enabled = false
+end
+
 -- Webview for G-code Visualization
 local viewport = ui.Webview(frame, {
     url = "file:///web/gcode_viewer.html"
 }, sidebar.width, 0, frame.width - 300, frame.height)
 
-
+function viewport:onLoaded()
+  if ui.theme == "dark" then
+    self:postmessage('{ "THEME" : "dark" }', true)
+  elseif ui.theme == "light" then
+    self:postmessage('{ "THEME" : "light" }', true)
+  else
+    ui.warn("Could not set theme for viewport, invalid theme","ERROR SETTING VIEWPORT THEME")
+  end
+end
 -- Helper: Update File Display
 local function open_file(file)
     if file then
@@ -82,20 +151,7 @@ local function open_file(file)
         currentFile_lbl.fontsize = 10
         currentFile_lbl.y = (openFile.height - currentFile_lbl.height) / 2 + 10
     end
-    
-    
 end
-
-function viewport:onMessage(str)
-  print(str)
-end
-
-function sidebar:onClick()
-  print("Clicked")
-  e = json.encode(currentTheme)
-  viewport:postmessage('{ "THEME" : '..e..'}', true)
-end
-
 -- File Open Button Click Handler
 function openFile:onClick()
     
@@ -120,6 +176,9 @@ function frame:onResize()
     viewport.height = self.height
     sidebar.height = self.height
     currentFile_edit.height = sidebar.height - (currentFile_lbl.y + currentFile_lbl.height) - 70
+    
+    --sidebar_bottomUI.y = sidebar.height- 50
+   -- sidebar_bottomUI.height = 50
 end
 
 -- Start UI Event Loop
