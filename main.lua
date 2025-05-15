@@ -103,6 +103,7 @@ function sidebar_bottomUI_settings:onClick()
   setting_theme_lbl.font = "Arial"
   local setting_theme_drop = ui.Combobox(setting_window,{"dark","light"},setting_theme_lbl.x + setting_theme_lbl.width + 5,25,200)
   setting_theme_drop.selected = setting_theme_drop.items[ui.theme]
+  lastSelected = setting_theme_drop.selected
   
   local saveSettings = ui.Button(setting_window,"Save Settings",10,10)
   
@@ -111,6 +112,32 @@ function sidebar_bottomUI_settings:onClick()
   
   local closeWindow = ui.Button(setting_window,"Close Settings",10)
   closeWindow.y = 300 - closeWindow.height - 10
+  
+  function saveSettings:onClick()
+    ui.theme = setting_theme_drop.selected.text
+  end
+  
+  function closeWindow:onClick()
+    local r = ""
+    if setting_theme_drop.selected ~= lastSelected then
+      sys.beep()
+      r = ui.confirm("Are you sure you want to close, you have unsaved settings","Unsaved Settings")
+    else
+      self.parent:hide()
+    end
+    
+    if r == "yes" then 
+      self.parent:hide()
+    elseif r == "no" then
+      -- do nothing
+    elseif r == "cancel" then
+      -- do nothing as well
+    else
+      -- do nothing
+    end
+    
+    
+  end
   
   function setting_window:onHide()
     frame:tofront()
