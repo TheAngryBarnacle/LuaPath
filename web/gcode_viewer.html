@@ -200,7 +200,7 @@ function setTheme(name) {
   animate();
 
   function drawGCode(commands) {
-  const scale = 20;
+  let scale = 1;
   const zOffset = 10; // Raise paths slightly above the grid
   const vertices = [];
   const geometry = new THREE.BufferGeometry();
@@ -212,10 +212,16 @@ function setTheme(name) {
     const x = (cmd.X ?? currentPos.x / scale) * scale;
     const y = (cmd.Y ?? currentPos.y / scale) * scale;
     const z = (cmd.Z ?? currentPos.z / scale) * scale + zOffset;
-
     const targetPos = new THREE.Vector3(x, y, z);
-
-    if (cmd.isArc && (g === "G02" || g === "G03")) {
+    
+     // Update scale only on unit commands
+  if (g === "G20") {
+    scale = 20; // inches
+  } else if (g === "G21") {
+    scale = 1; // millimeters
+  }
+    
+    if (cmd.isArc && (g === "G02" || g === "G2" || g === "G03" || g === "G3")) {
       const i = (cmd.I ?? 0) * scale;
       const j = (cmd.J ?? 0) * scale;
       const centerX = currentPos.x + i;
@@ -226,8 +232,8 @@ function setTheme(name) {
       const endAngle = Math.atan2(targetPos.y - centerY, targetPos.x - centerX);
 
       let angleDiff = endAngle - startAngle;
-      if (g === "G02" && angleDiff > 0) angleDiff -= Math.PI * 2;
-      if (g === "G03" && angleDiff < 0) angleDiff += Math.PI * 2;
+      if ((g === "G02" || g === "G2") && angleDiff > 0) angleDiff -= Math.PI * 2;
+      if ((g === "G03" || g === "G3") && angleDiff < 0) angleDiff += Math.PI * 2;
 
       const segments = 24;
       for (let s = 0; s <= segments; s++) {
@@ -239,7 +245,7 @@ function setTheme(name) {
         vertices.push(px, pz, -py);
       }
 
-    } else if (g === "G00" || g === "G01") {
+    } else if (g === "G00" || g === "G01" || g === "G0" || g === "G1") {
       vertices.push(currentPos.x, currentPos.z, -currentPos.y);
       vertices.push(targetPos.x, targetPos.z, -targetPos.y);
     }

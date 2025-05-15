@@ -37,7 +37,7 @@ local data = {}
 local frameTime = 1 / 60
 
 -- Main Window Setup
-local frame = ui.Window("LuaPath 2025.1")
+local frame = ui.Window("LuaPath 2025.2 DEV")
 frame.width = 1280
 frame.height = 720
 frame.bgcolor = currentTheme.background
@@ -98,12 +98,32 @@ function sidebar_bottomUI_settings:onClick()
   --frame:center()
   setting_window:center()
   
-  local setting_theme_lbl = ui.Label(setting_window,"Theme: ",20,20)
-  setting_theme_lbl.fontsize = 24
-  setting_theme_lbl.font = "Arial"
-  local setting_theme_drop = ui.Combobox(setting_window,{"dark","light"},setting_theme_lbl.x + setting_theme_lbl.width + 5,25,200)
-  setting_theme_drop.selected = setting_theme_drop.items[ui.theme]
-  lastSelected = setting_theme_drop.selected
+  local window_lbl = ui.Label(setting_window,"Appearance",10,10)
+  --window_lbl.fontsize = 12
+  window_lbl.font = "Arial Bold"
+  
+  local breakLine_lbl = ui.Panel(setting_window,0,window_lbl.y + window_lbl.height + 2,setting_window.width,2)
+  breakLine_lbl.bgcolor = currentTheme.card
+  breakLine_lbl.border = true
+  
+  local apperance_group = ui.Panel(setting_window,0,breakLine_lbl.y + breakLine_lbl.height,setting_window.width,65)
+  
+  local theme_light_r = ui.Radiobutton(apperance_group,"Light Theme",10,10)
+  local theme_dark_r = ui.Radiobutton(apperance_group,"Dark Theme",10,10)
+  theme_dark_r.x = theme_light_r.x + theme_light_r.width + 5
+  local theme_sysDef_r = ui.Radiobutton(apperance_group,"System Default",10,10)
+  theme_sysDef_r.x = theme_dark_r.x + theme_dark_r.width + 5
+  
+  local lineThickness_lbl = ui.Label(apperance_group,"Line Thickness: ",10,theme_dark_r.y + theme_dark_r.height + 10)
+  local lineThickness_combo = ui.Combobox(apperance_group,{"1","2","3","4"},lineThickness_lbl.x + lineThickness_lbl.width + 5,lineThickness_lbl.y - 3)
+  lineThickness_combo.selected = lineThickness_combo.items[1]
+  
+  local filePath_header = ui.Label(setting_window,"File Paths",10,apperance_group.y + apperance_group.height+5)
+  filePath_header.font = "Arial Bold"
+  
+  local filePath_break = ui.Panel(setting_window,0,filePath_header.y + filePath_header.height + 2,setting_window.width,2)
+  filePath_break.bgcolor = currentTheme.card
+  filePath_break.border = true
   
   local saveSettings = ui.Button(setting_window,"Save Settings",10,10)
   
@@ -117,28 +137,7 @@ function sidebar_bottomUI_settings:onClick()
     ui.theme = setting_theme_drop.selected.text
   end
   
-  function closeWindow:onClick()
-    local r = ""
-    if setting_theme_drop.selected ~= lastSelected then
-      sys.beep()
-      r = ui.confirm("Are you sure you want to close, you have unsaved settings","Unsaved Settings")
-    else
-      self.parent:hide()
-    end
-    
-    if r == "yes" then 
-      self.parent:hide()
-    elseif r == "no" then
-      -- do nothing
-    elseif r == "cancel" then
-      -- do nothing as well
-    else
-      -- do nothing
-    end
-    
-    
-  end
-  
+ 
   function setting_window:onHide()
     frame:tofront()
   end
@@ -182,7 +181,7 @@ end
 -- File Open Button Click Handler
 function openFile:onClick()
     
-    local file = ui.opendialog("Open gcode file", false, "Tap Files (*.tap)|*.tap|NC Files (*.nc)|*.nc")
+    local file = ui.opendialog("Open gcode file", false, "Tap Files (*.tap)|*.tap|NC Files (*.nc)|*.nc|GCODE Files (*.gcode)|*.gcode")
     if file then
         data = {}  -- Clear previous data
         file:open()

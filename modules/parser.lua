@@ -21,7 +21,7 @@ function M.parse_line(line)
         I = tonumber(line:match("I([%+%-]?%d+%.?%d*)")) or nil,
         J = tonumber(line:match("J([%+%-]?%d+%.?%d*)")) or nil,
     }
-
+ -- print(result.Command)
     -- Determine if this is an arc move (I and J present)
     result.isArc = (result.I ~= nil and result.J ~= nil)
 
