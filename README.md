@@ -66,8 +66,6 @@ Contributions are welcome! You can:
 ---
 
 ## Todo
-
- - Add Settings window
  - More File Types
  - Path Insights
  - Custom Themes
