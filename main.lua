@@ -2,14 +2,9 @@ local ui = require("ui")
 require("canvas")
 require("webview")
 local json = require("json")
---print(_VERSION)
--- My Modules
-local grid = require("modules/grid")
-local cam = require("modules/camera")
 local parser = require("modules/parser")
 
 -- Theme Definitions
---ui.theme = "dark"
 local themes = {
     dark = {
         background = 0x1e1e1e, text = 0xd4d4d4,
