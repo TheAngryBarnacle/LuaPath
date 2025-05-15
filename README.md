@@ -14,7 +14,9 @@ LuaPath is a lightweight desktop application for visualizing G-code toolpaths in
 
 ## 🖼️ Preview
 
-![image](https://github.com/user-attachments/assets/841d8fb8-23e5-420c-b6af-c8e29135816e)
+![image](https://github.com/user-attachments/assets/18ac8002-7916-4985-90fd-0370906829b7)
+
+
 
 
 ---
